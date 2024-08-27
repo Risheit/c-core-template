@@ -1,3 +1,7 @@
+#include "sample_ext.h"
+#include <stdio.h>
+
 int main() {
-  return 0;
+  printf("Hello world!\n");
+  return sample_third_party_function();
 }
