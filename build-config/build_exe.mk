@@ -6,8 +6,8 @@ include $(addprefix $(__full_build_config_dir), system_guard_clauses.mk)
 _LIBSDIR := std
 _DEPSDIR := .deps
 _INCFLAGS := $(addprefix -I$(__top_level_dir), $(__specified_inc_dirs)) -I$(__top_level_dir) -I$(__full_src_dir)
-_DEPS_FLAGS = -MT $(@F) -MD -MP -MF $(_DEPSDIR)/$(*F).Td
-_POSTCOMPILE = @mv -f $(_DEPSDIR)/$(*F).Td $(_DEPSDIR)/$(*F).d && touch $(@F)
+_DEPS_FLAGS = -MT $@ -MD -MP -MF $(_DEPSDIR)/$(basename $@).d
+_POSTCOMPILE = #mv -f $(_DEPSDIR)/$(basename $@).Td $(_DEPSDIR)/$(basename $@).d && touch $@
 
 _TESTDIR := tests
 _TEST_RUNNER := test_runner
@@ -35,7 +35,7 @@ test: $(_TEST_RUNNER_EXE) $(_TEST_EXES)
 	@$< $(foreach _EXE, $(addprefix $(__full_build_dir), $(_TEST_EXES)), $(_EXE))
 
 $(EXECUTABLE): $(ENTRY) $(_OBJECTS)
-	$(CC) $(CFLAGS) $< $(filter-out $(<F),$(^F)) -o $@ $(_INCFLAGS) $(LNKFLAGS)
+	$(CC) $(CFLAGS) $< $(filter-out $(<),$(^)) -o $@ $(_INCFLAGS) $(LNKFLAGS)
 
 # _TEST_EXES compilation
 $(addprefix $(__specified_test_dir), %.test): $(addprefix $(__full_test_dir), %.c) $(_OBJECTS) | $(_TESTDIR)
@@ -45,17 +45,19 @@ $(_TEST_RUNNER_EXE): $(_TEST_RUNNER_SRC) | $(_TESTDIR)
 	$(CC) $(CFLAGS) $(_TEST_RUNNER_SRC) -o $(_TESTDIR)/$(@F) $(_INCFLAGS) $(LNKFLAGS)
 
 # Compile the .o file alongside a .d file, which we use to store dependency information.
-%.o: %.c # Delete built in rules
+$(_LIBSDIR)/%.o: $(_LIBSDIR)/%.c $(_DEPSDIR)/$(_LIBSDIR)/%.d | $(_LIBSDIR) $(_DEPSDIR)
+	$(CC) $(_INCFLAGS) $(CFLAGS) $(_DEPS_FLAGS) -c $< -o $@ $(LNKFLAGS)
+	$(_POSTCOMPILE)
 
 %.o: %.c $(_DEPSDIR)/%.d | $(_DEPSDIR)
 	$(CC) $(_INCFLAGS) $(CFLAGS) $(_DEPS_FLAGS) -c $< -o $@ $(LNKFLAGS)
 	$(_POSTCOMPILE)
 
-$(_LIBSDIR)/%.o: $(_LIBSDIR)/%.c $(_DEPSDIR)/%.d | $(_DEPSDIR)
-	$(CC) $(_INCFLAGS) $(CFLAGS) $(_DEPS_FLAGS) -c $< -o $(@F) $(LNKFLAGS)
-	$(_POSTCOMPILE)
+.PHONY: $(_DEPSDIR) $(_LIBSDIR) $(_TESTDIR)
 
 $(_DEPSDIR): ; @mkdir -p $@
+
+$(_LIBSDIR): ; @mkdir -p $@
 
 $(_TESTDIR): ; @mkdir -p $@
 
