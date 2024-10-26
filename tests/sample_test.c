@@ -1,7 +1,18 @@
-#include <stdio.h>
+/* A quick sample test. See ext/testing.h for more details on writing tests. */
+
+#include <testing.h>
+
+void samplePassingTest(test_data *main) { PASS_TEST(); }
+
+void sampleFailingTest(test_data *main) {
+  FAIL_TEST("This test always fails!");
+}
 
 int main() {
-  printf("Sample test");
+  INIT();
 
-  return 0;
+  RUN(samplePassingTest);
+  RUN(sampleFailingTest);
+
+  CONCLUDE();
 }
