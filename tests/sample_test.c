@@ -2,17 +2,17 @@
 
 #include <testing.h>
 
-void samplePassingTest(test_data *main) { PASS_TEST(); }
+void sample_passing_test(test_data *main) { PASS_TEST(); }
 
-void sampleFailingTest(test_data *main) {
+void sample_failing_test(test_data *main) {
   FAIL_TEST("This test always fails!");
 }
 
 int main() {
   INIT();
 
-  RUN(samplePassingTest);
-  RUN(sampleFailingTest);
+  RUN(sample_passing_test);
+  RUN(sample_failing_test);
 
   CONCLUDE();
 }

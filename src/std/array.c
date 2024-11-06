@@ -1,62 +1,45 @@
 #include "array.h"
-#include <stdio.h>
+
+#include <stddef.h>
 #include <stdlib.h>
-#include <string.h>
+#include <assert.h>
 
-array arr_construct(size_t length, size_t element_size) {
-  array construct;
-  construct.data = calloc(length, element_size);
-  construct.length = length;
-  construct.element_size = element_size;
-  construct.freed = false;
+std_arrmt_t std_arr_construct(void **arr, uint64_t len, uint64_t size) {
+  assert(arr);
+  assert(*arr);
 
-  return construct;
+  *arr = calloc(len, size);
+  std_arrmt_t mt = {.len = len, .elmt_size = size, .valid = (arr)};
+  return mt;
 }
 
-array arr_from_raw(void *data, size_t length, size_t element_size) {
-  array construct;
-  construct.data = data;
-  construct.length = length;
-  construct.element_size = element_size;
-  construct.freed = false;
+void std_arr_destroy(void **arr, std_arrmt_t *mt) {
+  assert(arr);
+  assert(*arr);
 
-  data = NULL;
-  return construct;
+  free(*arr);
+  *arr = NULL;
+  if (mt)
+    mt->valid = false;
 }
 
-void arr_delete(array *arr) {
-  if (arr->freed) {
-    return;
-  }
+uint8_t std_arr_extend(void **arr, std_arrmt_t *mt, uint64_t ext) {
+  assert(arr);
+  assert(*arr);
+  assert(mt);
 
-  free(arr->data);
-  arr->data = NULL;
-  arr->length = 0;
-  arr->freed = true;
-}
+  if (ext == 0) // Nothing to do!
+    return 1;
 
-void *arr_get(array *arr, size_t index) {
-  size_t skip_amt = index * arr->element_size;
-  if (arr->freed || skip_amt < 0 || skip_amt >= (arr->length * arr->element_size)) {
-    return NULL;
-  }
+  if (mt->len + ext < mt->len) // Integer overflow
+    return 0;
 
-  char *data = arr_as(char *, *arr);
+  void *new = calloc(mt->len + ext, mt->elmt_size);
 
-  return (void *)(data + skip_amt);
-}
+  if (!new)
+    return 0;
 
-void arr_extend(array *arr, size_t extension) {
-  size_t total_amt = arr->length + extension;
-
-  void *construct;
-  construct = calloc(total_amt, arr->element_size);
-
-  memcpy(construct, arr->data, arr->length * arr->element_size);
-  free(arr->data);
-
-  arr->data = construct;
-  arr->length = total_amt;
-  arr->element_size = arr->element_size;
-  arr->freed = false;
+  *arr = new;
+  mt->len += ext;
+  return 1;
 }

@@ -2,48 +2,45 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+
+#define vptr(ptr) (void *)(ptr)
+#define vref(ptr) (void **)(ptr)
 
 /**
- * A generic array implementation that stores the array length alongside the
- * array itself. Array data is stored as a void pointer, so the accessing code
- * needs to know what the data is itself.
+ * Metadata that corresponds to a specific array.
+ *
  */
-typedef struct {
-  void *data;
-  size_t length;
-  size_t element_size;
-  bool freed;
-} array;
-
-#define arr_as(type, arr) ((type)((arr).data))
+struct _std_arr_mt {
+  uint64_t len;
+  uint64_t elmt_size;
+  bool valid;
+};
+typedef struct _std_arr_mt std_arrmt_t;
 
 /**
- * Construct an empty array structure with a given length and element size.
- * The array is initialized to 0.
+ * Allocates memory for an array of [len] elements each with [size] element
+ * size, and stores it in the [arr] pointer. Metadata information corresponding
+ * to this array is returned.
+ *
+ * If the array fails to be constructed, the [valid] field within the returned
+ * metadata is [false].
  */
-array arr_construct(size_t length, size_t element_size);
+std_arrmt_t std_arr_construct(void **arr, uint64_t len, uint64_t size);
 
 /**
- * Construct an array structure from a raw void array. This is a move operation,
- * and the original data pointer is marked as [NULL], and becomes inaccessible.
+ * Destroys the given array, setting the pointer to it and freeing any allocated
+ * memory. If the metadata field is provided, the [valid] field in the provided
+ * metadata [mt] is set to false.
  */
-array arr_from_raw(void *data, size_t length, size_t element_size);
+void std_arr_destroy(void **arr, std_arrmt_t *mt);
 
 /**
- * Frees the data related to an array. Using safe operations on a deleted array
- * generally return NULL. Before unsafe operations, check if the array is freed
- * through the [array.freed] member.
+ * Extends the given array by [ext] elements. This replaces the given [arr]
+ * pointer, and frees the memory previously allocated to the array, invalidating
+ * any other pointers to this array.
+ *
+ * If an error occurs, this function returns 0 and does not invalidate the
+ * provided array.
  */
-void arr_delete(array *arr);
-
-/**
- * Gets an address of an element from the array as a void pointer.
- * If the given index was out of bounds, or if the array was freed, this value
- * is null.
- */
-void *arr_get(array *arr, size_t index);
-
-/**
- * Extends the size of the array by [extension] elements.
- */
-void arr_extend(array *arr, size_t extension);
+uint8_t std_arr_extend(void **arr, std_arrmt_t *mt, uint64_t ext);
