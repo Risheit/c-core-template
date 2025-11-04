@@ -15,28 +15,18 @@
  *
  * A set of test functions. Test functions are functions that make use of the
  * test macros in this file, and are registered in the test files main function
- * (more on that later). Each test function has to have the same function
- * signature:
+ * (more on that later). Test functions can be added with the TEST macro:
  *
  * ```
- * void func_name(test_data *main) { ... }
+ * TEST(test_name) { ... }
  * ```
- *
- * The test_data parameter must be named according to the variable [TEST_DNAME].
- * In this file, the default definition for that is [main], but if needed a test
- * file can define its own parameter name by calling
- *
- * ```
- * #define TEST_DNAME param_name
- * ```
-
- * before including the testing header file.
+ * test_name must be a valid function name.
  *
  * The body of a testing function is written using the provided testing macros.
  * A standard test function might look like this:
  *
  * ```
- * void testAddFunction(test_data *main) {
+ * TEST(testAddFunction) {
  *  int act = add(3, 2);
  *  IS_TRUE(act == 5);
  * }
@@ -65,18 +55,24 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#ifndef TEST_DNAME
-#define TEST_DNAME main
-#endif
+#define TEST_DNAME __std_test_data_main
 
 // ---
 
+/**
+ * Immediately causes the currently running test to end, registering as a
+ * success.
+ */
 #define PASS_TEST()                                                            \
   do {                                                                         \
     TEST_DNAME->state = testing_PASSED;                                        \
     return;                                                                    \
   } while (0)
 
+/**
+ * Immediately causes the currently running test to end, registering as a
+ * failure.
+ */
 #define FAIL_TEST(fail_message)                                                \
   do {                                                                         \
     TEST_DNAME->state = testing_FAILED;                                        \
@@ -85,24 +81,32 @@
     return;                                                                    \
   } while (0)
 
+/**
+ * Causes the test to fail if the expression is false.
+ */
 #define IS_TRUE(expression)                                                    \
   do {                                                                         \
     if (!(expression)) {                                                       \
       TEST_DNAME->state = testing_FAILED;                                      \
       TEST_DNAME->failed++;                                                    \
-      TEST_DNAME->message = #expression " was false when expected true";       \
+      TEST_DNAME->message =                                                    \
+          __FILE__ __LINE__ #expression " was false when expected true";       \
       return;                                                                  \
     } else {                                                                   \
       TEST_DNAME->state = testing_PASSED;                                      \
     }                                                                          \
   } while (0)
 
+/**
+ * Causes the test to fail if the expression is true.
+ */
 #define IS_FALSE(expression)                                                   \
   do {                                                                         \
     if (expression) {                                                          \
       TEST_DNAME->state = testing_FAILED;                                      \
       TEST_DNAME->failed++;                                                    \
-      TEST_DNAME->message = #expression " was true when expected false";       \
+      TEST_DNAME->message =                                                    \
+          __FILE __LINE__ #expression " was true when expected false";         \
       return;                                                                  \
     } else {                                                                   \
       TEST_DNAME->state = testing_PASSED;                                      \
@@ -111,43 +115,73 @@
 
 // ---
 
+/**
+ * Initializes standard information about this test file.
+ */
 #define INIT()                                                                 \
-  test_data TEST_DNAME;                                                        \
+  std_test_data TEST_DNAME;                                                    \
   do {                                                                         \
     TEST_DNAME.failed = 0;                                                     \
     TEST_DNAME.run = 0;                                                        \
+    TEST_DNAME.skipped = 0;                                                    \
     TEST_DNAME.message = "";                                                   \
     TEST_DNAME.state = testing_NOT_RUN;                                        \
-    fprintf(stderr, "Running tests for " __FILE__":\n"); \
+    fprintf(stderr, "Running tests for " __FILE__ ":\n");                      \
   } while (0)
 
-#define RUN(TEST)                                                              \
+/**
+ * Runs the test function [testname] defined using the [TEST] macro.
+ */
+#define RUN(testname)                                                          \
   do {                                                                         \
     TEST_DNAME.run++;                                                          \
-    TEST(&TEST_DNAME);                                                         \
+    testname(&TEST_DNAME);                                                     \
     if (TEST_DNAME.state == testing_FAILED) {                                  \
-      fprintf(stderr, __FILE__ ": Test %d failed: %s\n", TEST_DNAME.run,       \
-              TEST_DNAME.message);                                             \
+      fprintf(stderr, __FILE__ ": Test %d failed: %s\n",                       \
+              TEST_DNAME.run + TEST_DNAME.skipped, TEST_DNAME.message);        \
     }                                                                          \
     TEST_DNAME.state = testing_NOT_RUN;                                        \
   } while (0);
 
+/**
+ * Skips running the test function [testname].
+ */
+#define SKIP(testname)                                                         \
+  do {                                                                         \
+    TEST_DNAME.skipped++;                                                      \
+    fprintf(stderr, __FILE__ ": Test %d skipped: %s\n",                        \
+            TEST_DNAME.run + TEST_DNAME.skipped, TEST_DNAME.message);          \
+    TEST_DNAME.state = testing_NOT_RUN;                                        \
+  } while (0);
+
+/**
+ * Ends the currently running test file, performing any necessary clean up
+ * actions.
+ */
 #define CONCLUDE()                                                             \
   do {                                                                         \
-    fprintf(stderr, __FILE__ ": %d/%d failed tests.\n\n", TEST_DNAME.failed,   \
-            TEST_DNAME.run);                                                   \
+    fprintf(stderr, __FILE__ ": %d/%d failed tests (%d skipped).\n\n",         \
+            TEST_DNAME.failed, TEST_DNAME.run + TEST_DNAME.skipped,            \
+            TEST_DNAME.skipped);                                               \
     return TEST_DNAME.failed;                                                  \
   } while (0)
 
-typedef enum {
+/**
+ * Defines a test function named [testname]. Test function names should be valid
+ * function names.
+ */
+#define TEST(testname) void testname(std_test_data *TEST_DNAME)
+
+typedef enum std_test_state {
   testing_PASSED,
   testing_FAILED,
   testing_NOT_RUN,
-} __test_state;
+} std_test_state;
 
-typedef struct {
+typedef struct std_test_data {
   int32_t failed;
   int32_t run;
+  int32_t skipped;
   const char *message;
-  __test_state state;
-} test_data;
+  std_test_state state;
+} std_test_data;
