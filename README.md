@@ -27,5 +27,5 @@ steps.
 ## Library use as a Submodule
 Including the `c-core` directory as a git submodule instead of a raw directory makes it easy to update and keep up-to-date the `c-core` library from other projects. Add the submodule using
 ```bash
-git submodule add https://github.com/chaconinc/DbConnector
+git submodule add https://github.com/Risheit/c-core/
 ```
