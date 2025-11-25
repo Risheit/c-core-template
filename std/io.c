@@ -1,7 +1,7 @@
-#include "io.h"
-#include "error.h"
-#include "memory.h"
-#include "strings.h"
+#include "std/io.h"
+#include "std/error.h"
+#include "std/memory.h"
+#include "std/strings.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -45,14 +45,12 @@ std_file *file_open(std_arena *arena, std_string name, std_fopen_state state,
   std_arena *working_memory =
       arena_create_s(buf, (ARENA_META_SIZE + NAME_MAX + 1) * sizeof buf[0], 0);
 
-  std_string safe_name = str_append(working_memory, name, str_null());
-
   std_file *file = arena_alloc(arena, sizeof(std_file));
   if (!file) {
     return nullptr;
   }
 
-  file->handle = fopen(str_get(safe_name),
+  file->handle = fopen(str_get_safe(working_memory, name),
                        fopen_string(state, flags & FOPEN_NO_OVERWRITE));
   file->err = 0;
   file->active = true;

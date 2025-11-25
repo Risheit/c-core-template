@@ -17,7 +17,7 @@ steps.
 3. Include and link the standard library within the executable's `CMakeLists.txt` file
   ```cmake
   target_link_libraries(${EXE_NAME} PRIVATE std)
-  target_include_directories(${EXE_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/c-core")
+  target_include_directories(${EXE_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/c-core/include")
   ```
 4. Access standard library headers under the `std/` include flag:
   ```c

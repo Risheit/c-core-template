@@ -137,9 +137,20 @@ bool str_isempty(std_string str);
  * Get the underlying buffer of the string [str].
  *
  * Note that this buffer is not guaranteed to be null-terminated! Cap all
- * interactions with raw buffers with the string's length using [str_len].
+ * interactions with raw buffers with the string's length using [str_len], or
+ * use [str_get_safe] to get a safe null-terminated copy.
  */
 const char *str_get(std_string str);
+
+/**
+ * Gets a guaranteed null-terminated buffer of the string [str]. This
+ * null-terminated copy is stored in [arena].
+ *
+ * Note that this null-terminated version is created from a copy of this string.
+ * Use [str_get] to access the underlying buffer without a copy, but note that
+ * buffer is not guaranteed to be null-terminated.
+ */
+const char *str_get_safe(std_arena *arena, std_string str);
 
 /**
  * Get the character at the index [at] in [str]. Throws an error if [at] is

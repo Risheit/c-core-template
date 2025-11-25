@@ -1,6 +1,6 @@
-#include "strings.h"
-#include "error.h"
-#include "memory.h"
+#include "std/strings.h"
+#include "std/error.h"
+#include "std/memory.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -170,6 +170,12 @@ bool str_isempty(std_string str) {
 const char *str_get(std_string str) {
   STR_VALID(str);
   return str._buf;
+}
+
+const char *str_get_safe(std_arena *arena, std_string str) {
+  STR_VALID(str);
+  std_string safe_string = str_append(arena, str, str_null());
+  return safe_string._buf;
 }
 
 char str_at(std_string str, size_t at) {
