@@ -31,7 +31,7 @@ std_string str_create_n(std_arena *arena, const char *buf, size_t n) {
   return str_alloc_n(arena, buf, n);
 }
 
-std_string str(const char *buf) {
+std_string str_const_create(const char *buf) {
   size_t n = strlen(buf);
   std_string string = {._buf = buf, ._len = n, ._err = 0};
   return string;

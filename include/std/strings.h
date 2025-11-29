@@ -46,6 +46,27 @@ enum {
  */
 std_string str_create(std_arena *arena, const char *buf);
 
+// NOLINTBEGIN(bugprone-sizeof-expression)
+// When used with pointers, the expanded macro contains a sizeof(char *) 
+// expression, which causes clang-tidy to issue a warning.
+
+/**
+ * A utility macro that wraps around [str_const_create].
+ *
+ * Unlike [str_const_create], which calculates the length of the string at
+ * runtime, the [str] utility macro will perform compile time length calculation
+ * of buffers when possible. This allows strings defined using [str] to be
+ * placed inside static variables, and is more performant.
+ */
+#define str(buf)                                                               \
+  _Generic(typeof(buf),                                                        \
+      const char[]: (                                                          \
+               std_string){._buf = (buf), ._len = sizeof(buf) - 1, ._err = 0}, \
+      char[]: (std_string){._buf = (buf), ._len = sizeof(buf) - 1, ._err = 0}, \
+      default: str_const_create(buf))
+
+// NOLINTEND(bugprone-sizeof-expression)
+
 /**
  * Initializes a string into [str] from a given null-terminated char array
  * constant [buf]. [buf] is copied until it reaches the null-terminator. Calling
@@ -56,8 +77,10 @@ std_string str_create(std_arena *arena, const char *buf);
  * Consider using this function over [str_create] when dealing with memory that
  * will be automatically freed, like stack-allocated [char] arrays or for
  * read-only [const char] arrays that will never be modified.
+ *
+ * Prefer using the [str] utility macro over this function.
  */
-std_string str(const char *buf);
+std_string str_const_create(const char *buf);
 
 /**
  * Compares the two strings [a] and [b].
@@ -83,7 +106,7 @@ typedef struct std_str_token std_str_token;
  * in [token]. The next token can be retrieved by calling [str_token_next]. The
  * substring the token signifies can be retrieved by calling [str_token_get].
  *
- * Multiple sequential [split] characters are ignored, for example, for a split
+ * Multiple sequential [split] characters are ignored. For example: for a split
  * character "C", "CHelloCCWorldC" -> ["Hello", "World"]
  */
 void str_tokenize(std_str_token *token, std_string str, char split);
